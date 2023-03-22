@@ -101,7 +101,7 @@ void Bot_sendTextMessage(Bot *bot, long long chat_id, const char *text) {
   curl_easy_setopt(bot->curl, CURLOPT_URL, bot->url);
   bot->data_offset = 0;
   curl_easy_setopt(bot->curl, CURLOPT_WRITEDATA, bot);
-  printf("GET %s\n", bot->url);
+  printf("GET %s\n", &bot->url[bot->url_offset]);
   curl_easy_perform(bot->curl);
   bot->data[bot->data_offset] = 0;
   printf("%s\n", bot->data);
@@ -118,35 +118,55 @@ void Bot_getUpdates(Bot *bot) {
     str_cpy("getUpdates?timeout=30", bot->url + bot->url_offset, 22);
     bot->url[bot->url_offset + 22] = 0;
   }
-  printf("GET %s\n", bot->url);
+  printf("GET %s\n", &bot->url[bot->url_offset]);
   curl_easy_setopt(bot->curl, CURLOPT_URL, bot->url);
   bot->data_offset = 0;
   curl_easy_setopt(bot->curl, CURLOPT_WRITEDATA, bot);
   curl_easy_perform(bot->curl);
   bot->data[bot->data_offset] = 0;
   json_value_t *updates = json_parse(bot->data, bot->data_offset);
-  assert(updates->type == json_type_object);
+  if (!updates)
+    return;
+  if (updates->type != json_type_object) {
+    free(updates);
+    return;
+  }
   json_object_t *updates_obj = updates->payload;
   json_object_element_t *el = updates_obj->start;
   while (el) {
     const char *el_str = el->name->string;
     if (str_eql("ok", el_str)) {
-      assert(el->value->type == json_type_true);
+      if (el->value->type != json_type_true) {
+        free(updates);
+        return;
+      }
     } else if (str_eql("result", el_str)) {
-      assert(el->value->type == json_type_array);
+      if (el->value->type != json_type_array) {
+        free(updates);
+        return;
+      }
       json_array_t *arr = el->value->payload;
       json_array_element_t *it = arr->start;
       while (it) {
-        assert(it->value->type == json_type_object);
+        if (it->value->type != json_type_object) {
+          free(updates);
+          return;
+        }
         json_object_t *update = it->value->payload;
         json_object_element_t *kv = update->start;
         while (kv) {
           if (str_eql("update_id", kv->name->string)) {
-            assert(kv->value->type == json_type_number);
+            if (kv->value->type != json_type_number) {
+              free(updates);
+              return;
+            }
             json_number_t *num = kv->value->payload;
             bot->last_update_id = strtoul(num->number, NULL, 10);
           } else if (str_eql("message", kv->name->string)) {
-            assert(kv->value->type == json_type_object);
+            if (kv->value->type != json_type_object) {
+              free(updates);
+              return;
+            }
             json_object_t *message = kv->value->payload;
             bot->handle_message(bot, message);
           }
