@@ -48,9 +48,8 @@ int main(int argc, char **argv) {
   printf("first_name: %s\n", info.first_name);
   printf("username: %s\n", info.username);
 
-  while (true) {
+  while (true)
     Bot_getUpdates(&bot);
-  }
 
   // Bot_deinit(&bot);
   // curl_global_cleanup();

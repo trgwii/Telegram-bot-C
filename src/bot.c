@@ -157,4 +157,5 @@ void Bot_getUpdates(Bot *bot) {
     }
     el = el->next;
   }
+  free(updates);
 }
