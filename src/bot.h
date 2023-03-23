@@ -13,6 +13,8 @@ typedef struct Bot {
   unsigned long data_offset;
   char data[1048576];
 
+  char json_scratch[1048576];
+
   unsigned long last_update_id;
 
   void (*handle_message)(struct Bot *, json_object_t *);

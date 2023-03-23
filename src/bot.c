@@ -13,6 +13,13 @@ static size_t Bot_curl_writefunc(char *ptr, size_t size, size_t nmemb,
   return 0;
 }
 
+static void *Bot_json_alloc_func(void *user_data, size_t size) {
+  Bot *bot = user_data;
+  if (size >= 1048576)
+    return NULL;
+  return &bot->json_scratch[0];
+}
+
 Bot Bot_init(char *token, void (*handle_message)(Bot *, json_object_t *)) {
   Bot bot;
   bot.curl = curl_easy_init();
@@ -86,7 +93,6 @@ BotInfo Bot_getMe(Bot *bot) {
     }
     el = el->next;
   }
-  free(bot_info);
   return result;
 }
 
@@ -124,49 +130,40 @@ void Bot_getUpdates(Bot *bot) {
   curl_easy_setopt(bot->curl, CURLOPT_WRITEDATA, bot);
   curl_easy_perform(bot->curl);
   bot->data[bot->data_offset] = 0;
-  json_value_t *updates = json_parse(bot->data, bot->data_offset);
+  json_value_t *updates =
+      json_parse_ex(bot->data, bot->data_offset, json_parse_flags_default,
+                    Bot_json_alloc_func, bot, NULL);
+  // json_value_t *updates = json_parse(bot->data, bot->data_offset);
   if (!updates)
     return;
-  if (updates->type != json_type_object) {
-    free(updates);
+  if (updates->type != json_type_object)
     return;
-  }
   json_object_t *updates_obj = updates->payload;
   json_object_element_t *el = updates_obj->start;
   while (el) {
     const char *el_str = el->name->string;
     if (str_eql("ok", el_str)) {
-      if (el->value->type != json_type_true) {
-        free(updates);
+      if (el->value->type != json_type_true)
         return;
-      }
     } else if (str_eql("result", el_str)) {
-      if (el->value->type != json_type_array) {
-        free(updates);
+      if (el->value->type != json_type_array)
         return;
-      }
       json_array_t *arr = el->value->payload;
       json_array_element_t *it = arr->start;
       while (it) {
-        if (it->value->type != json_type_object) {
-          free(updates);
+        if (it->value->type != json_type_object)
           return;
-        }
         json_object_t *update = it->value->payload;
         json_object_element_t *kv = update->start;
         while (kv) {
           if (str_eql("update_id", kv->name->string)) {
-            if (kv->value->type != json_type_number) {
-              free(updates);
+            if (kv->value->type != json_type_number)
               return;
-            }
             json_number_t *num = kv->value->payload;
             bot->last_update_id = strtoul(num->number, NULL, 10);
           } else if (str_eql("message", kv->name->string)) {
-            if (kv->value->type != json_type_object) {
-              free(updates);
+            if (kv->value->type != json_type_object)
               return;
-            }
             json_object_t *message = kv->value->payload;
             bot->handle_message(bot, message);
           }
@@ -177,5 +174,4 @@ void Bot_getUpdates(Bot *bot) {
     }
     el = el->next;
   }
-  free(updates);
 }
