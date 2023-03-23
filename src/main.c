@@ -19,17 +19,53 @@ static void handle_message(Bot *bot, json_object_t *message) {
         }
         cht = cht->next;
       }
-    } else if (str_eql("text", msg->name->string)) {
+    } else if (chat_id && str_eql("text", msg->name->string)) {
       assert(msg->value->type == json_type_string);
       json_string_t *text = msg->value->payload;
       const char *txt = text->string;
-      if (chat_id) {
-        if (str_starts_with(txt, "/help"))
-          Bot_sendTextMessage(bot, chat_id, "Commands:%0A/fart%0A/cc");
-        else if (str_starts_with(txt, "/fart"))
-          Bot_sendTextMessage(bot, chat_id, "farted!");
-        else if (str_starts_with(txt, "/cc"))
-          Bot_sendTextMessage(bot, chat_id, __VERSION__);
+      if (str_starts_with(txt, "/help"))
+        Bot_sendTextMessage(bot, chat_id, "Commands:%0A/fart%0A/cc");
+      else if (str_starts_with(txt, "/fart"))
+        Bot_sendTextMessage(bot, chat_id, "farted!");
+      else if (str_starts_with(txt, "/cc"))
+        Bot_sendTextMessage(bot, chat_id, __VERSION__);
+    } else if (chat_id && str_eql("new_chat_members", msg->name->string)) {
+      assert(msg->value->type == json_type_array);
+      json_array_t *members = msg->value->payload;
+      json_array_element_t *it = members->start;
+      while (it) {
+        assert(it->value->type == json_type_object);
+        json_object_t *member = it->value->payload;
+        json_object_element_t *mem = member->start;
+        while (mem) {
+          if (str_eql("first_name", mem->name->string)) {
+            assert(mem->value->type == json_type_string);
+            json_string_t *first_name = mem->value->payload;
+            char text[1024];
+            str_cpy("Welcome ", text, 8);
+            str_cpy(first_name->string, text + 8, first_name->string_size);
+            text[8 + first_name->string_size] = 0;
+            Bot_sendTextMessage(bot, chat_id, text);
+          }
+          mem = mem->next;
+        }
+        it = it->next;
+      }
+    } else if (chat_id && str_eql("left_chat_member", msg->name->string)) {
+      assert(msg->value->type == json_type_object);
+      json_object_t *member = msg->value->payload;
+      json_object_element_t *mem = member->start;
+      while (mem) {
+        if (str_eql("first_name", mem->name->string)) {
+          assert(mem->value->type == json_type_string);
+          json_string_t *first_name = mem->value->payload;
+          char text[1024];
+          str_cpy("Bye ", text, 4);
+          str_cpy(first_name->string, text + 4, first_name->string_size);
+          text[4 + first_name->string_size] = 0;
+          Bot_sendTextMessage(bot, chat_id, text);
+        }
+        mem = mem->next;
       }
     }
     msg = msg->next;
