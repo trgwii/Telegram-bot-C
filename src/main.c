@@ -26,7 +26,7 @@ static void handle_message(Bot *bot, json_object_t *message) {
       if (str_starts_with(txt, "/help"))
         Bot_sendTextMessage(bot, chat_id, "Commands:%0A/fart%0A/cc");
       else if (str_starts_with(txt, "/fart"))
-        Bot_sendTextMessage(bot, chat_id, "farted!");
+        Bot_sendTextMessage(bot, chat_id, "farted! 🗿");
       else if (str_starts_with(txt, "/cc"))
         Bot_sendTextMessage(bot, chat_id, __VERSION__);
     } else if (chat_id && str_eql("new_chat_members", msg->name->string)) {
@@ -76,18 +76,21 @@ int main(int argc, char **argv) {
   assert(argc >= 2);
   curl_global_init(CURL_GLOBAL_DEFAULT);
 
-  Bot bot = Bot_init(argv[1], handle_message);
-  BotInfo info = Bot_getMe(&bot);
+  Bot *bot = malloc(sizeof(Bot));
+  *bot = Bot_init(argv[1], handle_message);
+  BotInfo info = Bot_getMe(bot);
 
   printf("id: %lu\n", info.id);
   printf("is_bot: %s\n", info.is_bot ? "true" : "false");
   printf("first_name: %s\n", info.first_name);
   printf("username: %s\n", info.username);
 
-  while (true)
-    Bot_getUpdates(&bot);
+  char forever = 1;
+  while (forever)
+    Bot_getUpdates(bot);
 
-  // Bot_deinit(&bot);
-  // curl_global_cleanup();
-  // return 0;
+  Bot_deinit(bot);
+  free(bot);
+  curl_global_cleanup();
+  return 0;
 }
