@@ -20,12 +20,14 @@ static void *Bot_json_alloc_func(void *user_data, size_t size) {
   return &bot->json_scratch[0];
 }
 
-Bot Bot_init(char *token, void (*handle_message)(Bot *, json_object_t *)) {
+Bot Bot_init(char *token, void *handle_message_user_data,
+             void (*handle_message)(void *, Bot *, json_object_t *)) {
   Bot bot;
   bot.curl = curl_easy_init();
   bot.token = token;
   bot.token_len = str_len(token);
   bot.last_update_id = 0;
+  bot.handle_message_user_data = handle_message_user_data;
   bot.handle_message = handle_message;
 
   // Set up baseURL
@@ -165,7 +167,7 @@ void Bot_getUpdates(Bot *bot) {
             if (kv->value->type != json_type_object)
               return;
             json_object_t *message = kv->value->payload;
-            bot->handle_message(bot, message);
+            bot->handle_message(bot->handle_message_user_data, bot, message);
           }
           kv = kv->next;
         }

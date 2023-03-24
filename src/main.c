@@ -2,10 +2,15 @@
 #include "str.h"
 #include <assert.h>
 #include <curl/curl.h>
+#include <sqlite3.h>
 
-static void handle_message(Bot *bot, json_object_t *message) {
+static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
+  sqlite3 *db = user_data;
   json_object_element_t *msg = message->start;
   long long chat_id = 0;
+  long long user_id = 0;
+  long long reply_to_user_id = 0;
+  const char *first_name = NULL;
   while (msg) {
     if (str_eql("chat", msg->name->string)) {
       assert(msg->value->type == json_type_object);
@@ -19,16 +24,103 @@ static void handle_message(Bot *bot, json_object_t *message) {
         }
         cht = cht->next;
       }
+    } else if (str_eql("from", msg->name->string)) {
+      assert(msg->value->type == json_type_object);
+      json_object_t *from = msg->value->payload;
+      json_object_element_t *frm = from->start;
+      while (frm) {
+        if (str_eql("id", frm->name->string)) {
+          assert(frm->value->type == json_type_number);
+          json_number_t *id = frm->value->payload;
+          user_id = strtol(id->number, NULL, 10);
+        } else if (str_eql("first_name", frm->name->string)) {
+          assert(frm->value->type == json_type_string);
+          json_string_t *first_name_str = frm->value->payload;
+          first_name = first_name_str->string;
+        }
+        frm = frm->next;
+      }
+    } else if (str_eql("reply_to_message", msg->name->string)) {
+      assert(msg->value->type == json_type_object);
+      json_object_t *replied_to_message = msg->value->payload;
+      json_object_element_t *rtm = replied_to_message->start;
+      while (rtm) {
+        if (str_eql("from", rtm->name->string)) {
+          assert(rtm->value->type == json_type_object);
+          json_object_t *rtfrom = rtm->value->payload;
+          json_object_element_t *rtfrm = rtfrom->start;
+          while (rtfrm) {
+            if (str_eql("id", rtfrm->name->string)) {
+              assert(rtfrm->value->type == json_type_number);
+              json_number_t *rtfrmid = rtfrm->value->payload;
+              reply_to_user_id = strtol(rtfrmid->number, NULL, 10);
+            }
+            rtfrm = rtfrm->next;
+          }
+        }
+        rtm = rtm->next;
+      }
     } else if (chat_id && str_eql("text", msg->name->string)) {
       assert(msg->value->type == json_type_string);
       json_string_t *text = msg->value->payload;
       const char *txt = text->string;
       if (str_starts_with(txt, "/help"))
-        Bot_sendTextMessage(bot, chat_id, "Commands:%0A/fart%0A/cc");
+        Bot_sendTextMessage(bot, chat_id, "Commands:%0A/fart%0A/cc%0A/points");
       else if (str_starts_with(txt, "/fart"))
         Bot_sendTextMessage(bot, chat_id, "farted! 🗿");
       else if (str_starts_with(txt, "/cc"))
         Bot_sendTextMessage(bot, chat_id, __VERSION__);
+      else if (str_starts_with(txt, "/points")) {
+        char pointsMsg[1024];
+        int off = 0;
+        str_cpy("Rep points for ", pointsMsg + off, 15);
+        off += 15;
+        unsigned long name_len = str_len(first_name);
+        str_cpy(first_name, pointsMsg + off, name_len);
+        off += name_len;
+        str_cpy(": ", pointsMsg + off, 2);
+        off += 2;
+        sqlite3_stmt *stmt;
+        assert(sqlite3_prepare(db,
+                               "SELECT points FROM rep WHERE chat_id = ? "
+                               "AND user_id = ? LIMIT 1",
+                               65, &stmt, NULL) == SQLITE_OK);
+        assert(sqlite3_bind_int64(stmt, 1, chat_id) == SQLITE_OK);
+        assert(sqlite3_bind_int64(stmt, 2, user_id) == SQLITE_OK);
+        do {
+          int result = sqlite3_step(stmt);
+          assert(result != SQLITE_ERROR);
+          assert(result != SQLITE_MISUSE);
+          if (result == SQLITE_ROW) {
+            long long points = sqlite3_column_int64(stmt, 0);
+            off += snprintf(pointsMsg + off, 100, "%lld", points);
+            pointsMsg[off] = 0;
+            Bot_sendTextMessage(bot, chat_id, pointsMsg);
+            break;
+          } else if (result == SQLITE_DONE) {
+            break;
+          }
+        } while (true);
+        sqlite3_finalize(stmt);
+      } else if (chat_id && user_id && reply_to_user_id &&
+                 user_id != reply_to_user_id &&
+                 (str_eql("++", txt) || str_eql("+1", txt))) {
+        sqlite3_stmt *stmt;
+        assert(sqlite3_prepare(
+                   db,
+                   "UPDATE OR IGNORE rep SET points = points + 1 WHERE "
+                   "chat_id = ? AND user_id = ?",
+                   79, &stmt, NULL) == SQLITE_OK);
+        assert(sqlite3_bind_int64(stmt, 1, chat_id) == SQLITE_OK);
+        assert(sqlite3_bind_int64(stmt, 2, reply_to_user_id) == SQLITE_OK);
+        int result;
+        do {
+          result = sqlite3_step(stmt);
+        } while (result != SQLITE_ERROR && result != SQLITE_MISUSE &&
+                 result != SQLITE_DONE);
+        assert(result == SQLITE_DONE);
+        sqlite3_finalize(stmt);
+      }
     } else if (chat_id && str_eql("new_chat_members", msg->name->string)) {
       assert(msg->value->type == json_type_array);
       json_array_t *members = msg->value->payload;
@@ -40,11 +132,12 @@ static void handle_message(Bot *bot, json_object_t *message) {
         while (mem) {
           if (str_eql("first_name", mem->name->string)) {
             assert(mem->value->type == json_type_string);
-            json_string_t *first_name = mem->value->payload;
+            json_string_t *first_name_str = mem->value->payload;
             char text[1024];
             str_cpy("Welcome ", text, 8);
-            str_cpy(first_name->string, text + 8, first_name->string_size);
-            text[8 + first_name->string_size] = 0;
+            str_cpy(first_name_str->string, text + 8,
+                    first_name_str->string_size);
+            text[8 + first_name_str->string_size] = 0;
             Bot_sendTextMessage(bot, chat_id, text);
           }
           mem = mem->next;
@@ -58,11 +151,12 @@ static void handle_message(Bot *bot, json_object_t *message) {
       while (mem) {
         if (str_eql("first_name", mem->name->string)) {
           assert(mem->value->type == json_type_string);
-          json_string_t *first_name = mem->value->payload;
+          json_string_t *first_name_str = mem->value->payload;
           char text[1024];
           str_cpy("Bye ", text, 4);
-          str_cpy(first_name->string, text + 4, first_name->string_size);
-          text[4 + first_name->string_size] = 0;
+          str_cpy(first_name_str->string, text + 4,
+                  first_name_str->string_size);
+          text[4 + first_name_str->string_size] = 0;
           Bot_sendTextMessage(bot, chat_id, text);
         }
         mem = mem->next;
@@ -70,14 +164,45 @@ static void handle_message(Bot *bot, json_object_t *message) {
     }
     msg = msg->next;
   }
+  if (chat_id && user_id) {
+    sqlite3_stmt *stmt;
+    assert(sqlite3_prepare(db,
+                           "INSERT OR IGNORE INTO rep (chat_id, user_id, "
+                           "points) VALUES (?, ?, 0)",
+                           70, &stmt, NULL) == SQLITE_OK);
+    assert(sqlite3_bind_int64(stmt, 1, chat_id) == SQLITE_OK);
+    assert(sqlite3_bind_int64(stmt, 2, user_id) == SQLITE_OK);
+    do {
+      int result = sqlite3_step(stmt);
+      assert(result != SQLITE_ERROR);
+      assert(result != SQLITE_MISUSE);
+      if (result == SQLITE_DONE)
+        break;
+    } while (true);
+    sqlite3_finalize(stmt);
+  }
 }
 
 int main(int argc, char **argv) {
   assert(argc >= 2);
   curl_global_init(CURL_GLOBAL_DEFAULT);
 
+  sqlite3 *db;
+  assert(sqlite3_open("bot.db", &db) == SQLITE_OK);
+
+  char *errmsg;
+  if (sqlite3_exec(db,
+                   "CREATE TABLE IF NOT EXISTS rep (chat_id INT, user_id INT, "
+                   "points INT, UNIQUE (chat_id, user_id))",
+                   NULL, NULL, &errmsg) != SQLITE_OK) {
+    printf("SQLite error: %s\n", errmsg);
+    sqlite3_free(errmsg);
+    return 1;
+  }
+  sqlite3_free(errmsg);
+
   Bot *bot = malloc(sizeof(Bot));
-  *bot = Bot_init(argv[1], handle_message);
+  *bot = Bot_init(argv[1], db, handle_message);
   BotInfo info = Bot_getMe(bot);
 
   printf("id: %lu\n", info.id);
@@ -91,6 +216,8 @@ int main(int argc, char **argv) {
 
   Bot_deinit(bot);
   free(bot);
+
+  sqlite3_close(db);
   curl_global_cleanup();
   return 0;
 }

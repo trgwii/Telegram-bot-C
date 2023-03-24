@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 
 #define CC "zig cc"
-#define LIBS "-lcurl"
+#define LIBS "-lcurl -lsqlite3"
 
 #define DISABLED                                                               \
   "-Wno-disabled-macro-expansion "                                             \

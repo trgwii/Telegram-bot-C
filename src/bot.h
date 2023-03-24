@@ -17,10 +17,13 @@ typedef struct Bot {
 
   unsigned long last_update_id;
 
-  void (*handle_message)(struct Bot *, json_object_t *);
+  void *handle_message_user_data;
+
+  void (*handle_message)(void *, struct Bot *, json_object_t *);
 } Bot;
 
-Bot Bot_init(char *token, void (*handle_message)(Bot *, json_object_t *));
+Bot Bot_init(char *token, void *handle_message_user_data,
+             void (*handle_message)(void *, Bot *, json_object_t *));
 
 void Bot_deinit(Bot *bot);
 
