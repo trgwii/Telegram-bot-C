@@ -116,7 +116,8 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
         sqlite3_finalize(stmt);
       } else if (chat_id && user_id && reply_to_user_id &&
                  user_id != reply_to_user_id &&
-                 (str_eql("++", txt) || str_eql("+1", txt))) {
+                 (str_eql("++", txt) || str_eql("+1", txt) ||
+                  str_eql("👍", txt))) {
         sqlite3_stmt *stmt;
         assert(sqlite3_prepare(
                    db,
