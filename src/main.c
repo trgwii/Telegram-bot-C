@@ -12,6 +12,7 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
   long long reply_to_user_id = 0;
   const char *first_name = NULL;
   const char *reply_to_first_name = NULL;
+  const char *chat_title = NULL;
   while (msg) {
     if (cstr_eql("chat", msg->name->string)) {
       assert(msg->value->type == json_type_object);
@@ -22,6 +23,10 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
           assert(cht->value->type == json_type_number);
           json_number_t *id = cht->value->payload;
           chat_id = strtol(id->number, NULL, 10);
+        } else if (cstr_eql("title", cht->name->string)) {
+          assert(cht->value->type == json_type_string);
+          json_string_t *ttl = cht->value->payload;
+          chat_title = ttl->string;
         }
         cht = cht->next;
       }
@@ -87,6 +92,10 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
           rep_points_first_name = reply_to_first_name;
         }
         SB_appendC(&pmsg, (char *)(size_t)rep_points_first_name);
+        if (chat_title) {
+          SB_appendC(&pmsg, " in ");
+          SB_appendC(&pmsg, (char *)(size_t)chat_title);
+        }
         SB_appendC(&pmsg, ": ");
         sqlite3_stmt *stmt;
         assert(sqlite3_prepare(db,
