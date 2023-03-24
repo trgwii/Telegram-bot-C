@@ -1,4 +1,3 @@
-// zig run -lc build.c -- self fetch test build
 #define _GNU_SOURCE
 
 #include <stdbool.h>

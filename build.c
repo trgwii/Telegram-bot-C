@@ -1,3 +1,8 @@
+#/*
+/usr/bin/env zig run -lc build.c -- $@
+exit $?
+#*/
+
 #include "build.h"
 #include <stdlib.h>
 #include <string.h>
@@ -23,8 +28,15 @@ int main(int argc, char **argv) {
   }
 
   if (!clean && !self && !fetch && !test && !build) {
-    printf("Usage:\n\tzig run -lc build.c -- [clean] [self] [fetch] [test] "
-           "[build]\n");
+    printf("Usage:\n\t\x1b[37mzig run -lc build.c -- [clean] [self] [fetch] "
+           "[test] "
+           "[build]\x1b[0m\n\n\t\x1b[32mclean\x1b[0m - Remove output "
+           "folders\n\t\x1b[32mself\x1b[0m - Run the "
+           "compiler on build.c with flags enabled "
+           "(self-test)\n\t\x1b[32mfetch\x1b[0m - "
+           "Fetch remote dependencies using curl from "
+           "CLI\n\t\x1b[32mtest\x1b[0m - Run "
+           "tests\n\t\x1b[32mbuild\x1b[0m - Build the bot\n");
     return 1;
   }
 
