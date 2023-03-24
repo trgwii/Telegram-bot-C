@@ -1,3 +1,5 @@
 o
 build
 src/json.h
+bot.db
+run.sh
