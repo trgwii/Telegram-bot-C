@@ -21,14 +21,27 @@
 #define OBJ(name) system(CC " " FLAGS " src/" name ".c -c -o o/" name ".o")
 #define EXE(cmd) system(CC " " FLAGS " " LIBS " " cmd)
 #define DIR(name) mkdir(name, 0755)
+#define TEST(name)                                                             \
+  system(CC " " FLAGS " src/" name "_test.c -o test/" name " && ./test/" name  \
+            " > /dev/null")
 
 int main(void) {
+  // Deps
   HTTP_GET("https://raw.githubusercontent.com/sheredom/json.h/master/json.h",
            "src/json.h");
+
+  // Tests
+  DIR("test");
+  TEST("str");
+
+  // Object files
   DIR("o");
   OBJ("str");
   OBJ("bot");
+
+  // Build
   DIR("build");
   EXE("o/*.o src/main.c -o build/main");
+
   return 0;
 }

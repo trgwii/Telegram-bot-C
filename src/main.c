@@ -13,50 +13,50 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
   const char *first_name = NULL;
   const char *reply_to_first_name = NULL;
   while (msg) {
-    if (str_eql("chat", msg->name->string)) {
+    if (cstr_eql("chat", msg->name->string)) {
       assert(msg->value->type == json_type_object);
       json_object_t *chat = msg->value->payload;
       json_object_element_t *cht = chat->start;
       while (cht) {
-        if (str_eql("id", cht->name->string)) {
+        if (cstr_eql("id", cht->name->string)) {
           assert(cht->value->type == json_type_number);
           json_number_t *id = cht->value->payload;
           chat_id = strtol(id->number, NULL, 10);
         }
         cht = cht->next;
       }
-    } else if (str_eql("from", msg->name->string)) {
+    } else if (cstr_eql("from", msg->name->string)) {
       assert(msg->value->type == json_type_object);
       json_object_t *from = msg->value->payload;
       json_object_element_t *frm = from->start;
       while (frm) {
-        if (str_eql("id", frm->name->string)) {
+        if (cstr_eql("id", frm->name->string)) {
           assert(frm->value->type == json_type_number);
           json_number_t *id = frm->value->payload;
           user_id = strtol(id->number, NULL, 10);
-        } else if (str_eql("first_name", frm->name->string)) {
+        } else if (cstr_eql("first_name", frm->name->string)) {
           assert(frm->value->type == json_type_string);
           json_string_t *first_name_str = frm->value->payload;
           first_name = first_name_str->string;
         }
         frm = frm->next;
       }
-    } else if (str_eql("reply_to_message", msg->name->string)) {
+    } else if (cstr_eql("reply_to_message", msg->name->string)) {
       assert(msg->value->type == json_type_object);
       json_object_t *replied_to_message = msg->value->payload;
       json_object_element_t *rtm = replied_to_message->start;
       while (rtm) {
-        if (str_eql("from", rtm->name->string)) {
+        if (cstr_eql("from", rtm->name->string)) {
           assert(rtm->value->type == json_type_object);
           json_object_t *rtfrom = rtm->value->payload;
           json_object_element_t *rtfrm = rtfrom->start;
           while (rtfrm) {
-            if (str_eql("id", rtfrm->name->string)) {
+            if (cstr_eql("id", rtfrm->name->string)) {
               assert(rtfrm->value->type == json_type_number);
               json_number_t *rtfrmid = rtfrm->value->payload;
               reply_to_user_id = strtol(rtfrmid->number, NULL, 10);
             }
-            if (str_eql("first_name", rtfrm->name->string)) {
+            if (cstr_eql("first_name", rtfrm->name->string)) {
               assert(rtfrm->value->type == json_type_string);
               json_string_t *rtfrmfirstname = rtfrm->value->payload;
               reply_to_first_name = rtfrmfirstname->string;
@@ -66,32 +66,28 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
         }
         rtm = rtm->next;
       }
-    } else if (chat_id && str_eql("text", msg->name->string)) {
+    } else if (chat_id && cstr_eql("text", msg->name->string)) {
       assert(msg->value->type == json_type_string);
       json_string_t *text = msg->value->payload;
       const char *txt = text->string;
-      if (str_starts_with(txt, "/help"))
+      if (cstr_starts_with(txt, "/help"))
         Bot_sendTextMessage(bot, chat_id, "Commands:%0A/fart%0A/cc%0A/points");
-      else if (str_starts_with(txt, "/fart"))
+      else if (cstr_starts_with(txt, "/fart"))
         Bot_sendTextMessage(bot, chat_id, "farted! 🗿");
-      else if (str_starts_with(txt, "/cc"))
+      else if (cstr_starts_with(txt, "/cc"))
         Bot_sendTextMessage(bot, chat_id, __VERSION__);
-      else if (str_starts_with(txt, "/points")) {
-        char pointsMsg[1024];
-        int off = 0;
-        str_cpy("Rep points for ", pointsMsg + off, 15);
-        off += 15;
+      else if (cstr_starts_with(txt, "/points")) {
+        char pointsMsgData[1024];
+        SB pmsg = SB_fromArray(pointsMsgData);
+        SB_appendC(&pmsg, "Rep points for ");
         const char *rep_points_first_name = first_name;
         long long rep_points_user_id = user_id;
         if (reply_to_user_id) {
           rep_points_user_id = reply_to_user_id;
           rep_points_first_name = reply_to_first_name;
         }
-        unsigned long name_len = str_len(rep_points_first_name);
-        str_cpy(rep_points_first_name, pointsMsg + off, name_len);
-        off += name_len;
-        str_cpy(": ", pointsMsg + off, 2);
-        off += 2;
+        SB_appendC(&pmsg, (char *)(size_t)rep_points_first_name);
+        SB_appendC(&pmsg, ": ");
         sqlite3_stmt *stmt;
         assert(sqlite3_prepare(db,
                                "SELECT points FROM rep WHERE chat_id = ? "
@@ -105,9 +101,10 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
           assert(result != SQLITE_MISUSE);
           if (result == SQLITE_ROW) {
             long long points = sqlite3_column_int64(stmt, 0);
-            off += snprintf(pointsMsg + off, 100, "%lld", points);
-            pointsMsg[off] = 0;
-            Bot_sendTextMessage(bot, chat_id, pointsMsg);
+
+            pmsg.str.len += (size_t)snprintf(pmsg.str.ptr + pmsg.str.len, 100,
+                                             "%lld", points);
+            Bot_sendTextMessage(bot, chat_id, pmsg.str.ptr);
             break;
           } else if (result == SQLITE_DONE) {
             break;
@@ -116,8 +113,8 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
         sqlite3_finalize(stmt);
       } else if (chat_id && user_id && reply_to_user_id &&
                  user_id != reply_to_user_id &&
-                 (str_eql("++", txt) || str_eql("+1", txt) ||
-                  str_eql("👍", txt))) {
+                 (cstr_eql("++", txt) || cstr_eql("+1", txt) ||
+                  cstr_eql("👍", txt))) {
         sqlite3_stmt *stmt;
         assert(sqlite3_prepare(
                    db,
@@ -134,7 +131,7 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
         assert(result == SQLITE_DONE);
         sqlite3_finalize(stmt);
       }
-    } else if (chat_id && str_eql("new_chat_members", msg->name->string)) {
+    } else if (chat_id && cstr_eql("new_chat_members", msg->name->string)) {
       assert(msg->value->type == json_type_array);
       json_array_t *members = msg->value->payload;
       json_array_element_t *it = members->start;
@@ -143,34 +140,34 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
         json_object_t *member = it->value->payload;
         json_object_element_t *mem = member->start;
         while (mem) {
-          if (str_eql("first_name", mem->name->string)) {
+          if (cstr_eql("first_name", mem->name->string)) {
             assert(mem->value->type == json_type_string);
             json_string_t *first_name_str = mem->value->payload;
             char text[1024];
-            str_cpy("Welcome ", text, 8);
-            str_cpy(first_name_str->string, text + 8,
-                    first_name_str->string_size);
-            text[8 + first_name_str->string_size] = 0;
-            Bot_sendTextMessage(bot, chat_id, text);
+            SB b = SB_fromArray(text);
+            SB_appendC(&b, "Welcome ");
+            SB_append(&b, Str_fromPtrLen((char *)(size_t)first_name_str->string,
+                                         first_name_str->string_size));
+            Bot_sendTextMessage(bot, chat_id, b.str.ptr);
           }
           mem = mem->next;
         }
         it = it->next;
       }
-    } else if (chat_id && str_eql("left_chat_member", msg->name->string)) {
+    } else if (chat_id && cstr_eql("left_chat_member", msg->name->string)) {
       assert(msg->value->type == json_type_object);
       json_object_t *member = msg->value->payload;
       json_object_element_t *mem = member->start;
       while (mem) {
-        if (str_eql("first_name", mem->name->string)) {
+        if (cstr_eql("first_name", mem->name->string)) {
           assert(mem->value->type == json_type_string);
           json_string_t *first_name_str = mem->value->payload;
           char text[1024];
-          str_cpy("Bye ", text, 4);
-          str_cpy(first_name_str->string, text + 4,
-                  first_name_str->string_size);
-          text[4 + first_name_str->string_size] = 0;
-          Bot_sendTextMessage(bot, chat_id, text);
+          SB b = SB_fromArray(text);
+          SB_appendC(&b, "Bye ");
+          SB_append(&b, Str_fromPtrLen((char *)(size_t)first_name_str->string,
+                                       first_name_str->string_size));
+          Bot_sendTextMessage(bot, chat_id, b.str.ptr);
         }
         mem = mem->next;
       }

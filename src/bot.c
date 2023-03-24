@@ -25,16 +25,16 @@ Bot Bot_init(char *token, void *handle_message_user_data,
   Bot bot;
   bot.curl = curl_easy_init();
   bot.token = token;
-  bot.token_len = str_len(token);
+  bot.token_len = cstr_len(token);
   bot.last_update_id = 0;
   bot.handle_message_user_data = handle_message_user_data;
   bot.handle_message = handle_message;
 
   // Set up baseURL
-  str_cpy("https://api.telegram.org/bot", bot.url, 28);
-  str_cpy(bot.token, bot.url + 28, bot.token_len);
+  cstr_cpy("https://api.telegram.org/bot", bot.url, 28);
+  cstr_cpy(bot.token, bot.url + 28, bot.token_len);
   bot.url_offset = 28 + bot.token_len + 1;
-  str_cpy("/", bot.url + 28 + bot.token_len, 1);
+  cstr_cpy("/", bot.url + 28 + bot.token_len, 1);
 
   // Set up curl handlers
   curl_easy_setopt(bot.curl, CURLOPT_WRITEFUNCTION, Bot_curl_writefunc);
@@ -44,7 +44,7 @@ Bot Bot_init(char *token, void *handle_message_user_data,
 void Bot_deinit(Bot *bot) { curl_easy_cleanup(bot->curl); }
 
 BotInfo Bot_getMe(Bot *bot) {
-  str_cpy("getMe", bot->url + bot->url_offset, 6);
+  cstr_cpy("getMe", bot->url + bot->url_offset, 6);
   curl_easy_setopt(bot->curl, CURLOPT_URL, bot->url);
   bot->data_offset = 0;
   curl_easy_setopt(bot->curl, CURLOPT_WRITEDATA, bot);
@@ -62,32 +62,32 @@ BotInfo Bot_getMe(Bot *bot) {
   json_object_element_t *el = bot_info_obj->start;
   while (el) {
     const char *el_str = el->name->string;
-    if (str_eql("ok", el_str)) {
+    if (cstr_eql("ok", el_str)) {
       assert(el->value->type == json_type_true);
-    } else if (str_eql("result", el_str)) {
+    } else if (cstr_eql("result", el_str)) {
       assert(el->value->type == json_type_object);
       json_object_t *bot_info_result = el->value->payload;
       json_object_element_t *rel = bot_info_result->start;
       while (rel) {
         const char *rel_str = rel->name->string;
-        if (str_eql("id", rel_str)) {
+        if (cstr_eql("id", rel_str)) {
           assert(rel->value->type == json_type_number);
           json_number_t *num = rel->value->payload;
           result.id = strtoul(num->number, NULL, 10);
-        } else if (str_eql("is_bot", rel_str)) {
+        } else if (cstr_eql("is_bot", rel_str)) {
           assert(rel->value->type == json_type_true ||
                  rel->value->type == json_type_false);
           result.is_bot = rel->value->type == json_type_true;
-        } else if (str_eql("first_name", rel_str)) {
+        } else if (cstr_eql("first_name", rel_str)) {
           assert(rel->value->type == json_type_string);
           json_string_t *first_name = rel->value->payload;
-          str_cpy(first_name->string, result.first_name,
-                  first_name->string_size);
+          cstr_cpy(first_name->string, result.first_name,
+                   first_name->string_size);
           result.first_name[first_name->string_size] = 0;
-        } else if (str_eql("username", rel_str)) {
+        } else if (cstr_eql("username", rel_str)) {
           assert(rel->value->type == json_type_string);
           json_string_t *username = rel->value->payload;
-          str_cpy(username->string, result.username, username->string_size);
+          cstr_cpy(username->string, result.username, username->string_size);
           result.username[username->string_size] = 0;
         }
         rel = rel->next;
@@ -99,13 +99,13 @@ BotInfo Bot_getMe(Bot *bot) {
 }
 
 void Bot_sendTextMessage(Bot *bot, long long chat_id, const char *text) {
-  str_cpy("sendMessage?chat_id=", bot->url + bot->url_offset, 20);
+  cstr_cpy("sendMessage?chat_id=", bot->url + bot->url_offset, 20);
   unsigned long off =
       (unsigned long)snprintf(bot->url + bot->url_offset + 20,
                               1023 - bot->url_offset + 20, "%lld", chat_id);
-  str_cpy("&text=", bot->url + bot->url_offset + 20 + off, 6);
-  str_cpy(text, bot->url + bot->url_offset + 20 + off + 6, str_len(text));
-  bot->url[bot->url_offset + 20 + off + 6 + str_len(text)] = 0;
+  cstr_cpy("&text=", bot->url + bot->url_offset + 20 + off, 6);
+  cstr_cpy(text, bot->url + bot->url_offset + 20 + off + 6, cstr_len(text));
+  bot->url[bot->url_offset + 20 + off + 6 + cstr_len(text)] = 0;
   curl_easy_setopt(bot->curl, CURLOPT_URL, bot->url);
   bot->data_offset = 0;
   curl_easy_setopt(bot->curl, CURLOPT_WRITEDATA, bot);
@@ -117,13 +117,13 @@ void Bot_sendTextMessage(Bot *bot, long long chat_id, const char *text) {
 
 void Bot_getUpdates(Bot *bot) {
   if (bot->last_update_id) {
-    str_cpy("getUpdates?timeout=30&offset=", bot->url + bot->url_offset, 29);
+    cstr_cpy("getUpdates?timeout=30&offset=", bot->url + bot->url_offset, 29);
     unsigned long off = (unsigned long)snprintf(bot->url + bot->url_offset + 29,
                                                 1023 - (bot->url_offset + 29),
                                                 "%lu", bot->last_update_id + 1);
     bot->url[bot->url_offset + 29 + off] = 0;
   } else {
-    str_cpy("getUpdates?timeout=30", bot->url + bot->url_offset, 22);
+    cstr_cpy("getUpdates?timeout=30", bot->url + bot->url_offset, 22);
     bot->url[bot->url_offset + 22] = 0;
   }
   printf("GET %s\n", &bot->url[bot->url_offset]);
@@ -144,10 +144,10 @@ void Bot_getUpdates(Bot *bot) {
   json_object_element_t *el = updates_obj->start;
   while (el) {
     const char *el_str = el->name->string;
-    if (str_eql("ok", el_str)) {
+    if (cstr_eql("ok", el_str)) {
       if (el->value->type != json_type_true)
         return;
-    } else if (str_eql("result", el_str)) {
+    } else if (cstr_eql("result", el_str)) {
       if (el->value->type != json_type_array)
         return;
       json_array_t *arr = el->value->payload;
@@ -158,12 +158,12 @@ void Bot_getUpdates(Bot *bot) {
         json_object_t *update = it->value->payload;
         json_object_element_t *kv = update->start;
         while (kv) {
-          if (str_eql("update_id", kv->name->string)) {
+          if (cstr_eql("update_id", kv->name->string)) {
             if (kv->value->type != json_type_number)
               return;
             json_number_t *num = kv->value->payload;
             bot->last_update_id = strtoul(num->number, NULL, 10);
-          } else if (str_eql("message", kv->name->string)) {
+          } else if (cstr_eql("message", kv->name->string)) {
             if (kv->value->type != json_type_object)
               return;
             json_object_t *message = kv->value->payload;
