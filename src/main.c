@@ -11,6 +11,7 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
   long long user_id = 0;
   long long reply_to_user_id = 0;
   const char *first_name = NULL;
+  const char *reply_to_first_name = NULL;
   while (msg) {
     if (str_eql("chat", msg->name->string)) {
       assert(msg->value->type == json_type_object);
@@ -55,6 +56,11 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
               json_number_t *rtfrmid = rtfrm->value->payload;
               reply_to_user_id = strtol(rtfrmid->number, NULL, 10);
             }
+            if (str_eql("first_name", rtfrm->name->string)) {
+              assert(rtfrm->value->type == json_type_string);
+              json_string_t *rtfrmfirstname = rtfrm->value->payload;
+              reply_to_first_name = rtfrmfirstname->string;
+            }
             rtfrm = rtfrm->next;
           }
         }
@@ -75,8 +81,14 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
         int off = 0;
         str_cpy("Rep points for ", pointsMsg + off, 15);
         off += 15;
-        unsigned long name_len = str_len(first_name);
-        str_cpy(first_name, pointsMsg + off, name_len);
+        const char *rep_points_first_name = first_name;
+        long long rep_points_user_id = user_id;
+        if (reply_to_user_id) {
+          rep_points_user_id = reply_to_user_id;
+          rep_points_first_name = reply_to_first_name;
+        }
+        unsigned long name_len = str_len(rep_points_first_name);
+        str_cpy(rep_points_first_name, pointsMsg + off, name_len);
         off += name_len;
         str_cpy(": ", pointsMsg + off, 2);
         off += 2;
@@ -86,7 +98,7 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
                                "AND user_id = ? LIMIT 1",
                                65, &stmt, NULL) == SQLITE_OK);
         assert(sqlite3_bind_int64(stmt, 1, chat_id) == SQLITE_OK);
-        assert(sqlite3_bind_int64(stmt, 2, user_id) == SQLITE_OK);
+        assert(sqlite3_bind_int64(stmt, 2, rep_points_user_id) == SQLITE_OK);
         do {
           int result = sqlite3_step(stmt);
           assert(result != SQLITE_ERROR);
