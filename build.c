@@ -3,6 +3,8 @@
 exit $?
 #*/
 
+// gcc -lc build.c -o build/build && ./build/build
+
 #include "build.h"
 
 int main(int argc, char **argv) {
