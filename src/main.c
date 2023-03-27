@@ -55,6 +55,7 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
       else if (cstr_starts_with(txt, "/cc"))
         Bot_sendTextMessage(bot, chat_id, __VERSION__);
       else if (cstr_starts_with(txt, "/addcommand") && user_id == admin_id) {
+        printf("addcommand: %s\n", txt);
         mkdir("commands", 0755);
         long cmd_start = cstr_indexof(txt, ' ');
         if (cmd_start == -1)
@@ -103,7 +104,6 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
         SB_append(&f, "commands/");
         SB_append(&f, txt + 1);
         SB_append(&f, ".txt");
-        printf("%s\n", f.ptr);
         struct stat st;
         if (stat(f.ptr, &st) != 0)
           return;
