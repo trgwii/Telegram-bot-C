@@ -15,6 +15,6 @@ Requires `libcurl-dev` and `libsqlite3-dev` to build.
 
 ## TODO
 
-- [ ] Cleanup JSON handling in [main](src/main.c#L16)
-  - [ ] Explore more functions from [json.h](src/json.h)
+- [x] Cleanup JSON handling in [main](src/main.c#L16)
+  - [x] Explore more functions from [json.h](src/json.h)
 - [ ] Add people to DB immediately if they try to issue a command and can't be found
