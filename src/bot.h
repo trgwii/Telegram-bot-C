@@ -17,6 +17,8 @@ typedef struct Bot {
 
   unsigned long last_update_id;
 
+  const char *parse_mode;
+
   void *handle_message_user_data;
 
   void (*handle_message)(void *, struct Bot *, json_object_t *);

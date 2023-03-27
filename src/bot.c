@@ -28,6 +28,7 @@ Bot Bot_init(char *token, void *handle_message_user_data,
   bot.token = token;
   bot.token_len = cstr_len(token);
   bot.last_update_id = 0;
+  bot.parse_mode = NULL;
   bot.handle_message_user_data = handle_message_user_data;
   bot.handle_message = handle_message;
 
@@ -104,6 +105,10 @@ void Bot_sendTextMessageLen(Bot *bot, long long chat_id, const char *text,
   SB_append(&url, "&text=");
   SB_appendLen(&url, text, text_len);
   SB_append(&url, "&disable_web_page_preview=1");
+  if (bot->parse_mode) {
+    SB_append(&url, "&parse_mode=");
+    SB_append(&url, bot->parse_mode);
+  }
   curl_easy_setopt(bot->curl, CURLOPT_URL, bot->url);
   bot->data_offset = 0;
   curl_easy_setopt(bot->curl, CURLOPT_WRITEDATA, bot);

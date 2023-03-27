@@ -52,7 +52,7 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
       if (cstr_starts_with(txt, "/help")) {
         char cmds[4096];
         SB b = SB_fromArray(cmds);
-        SB_append(&b, "Commands:%0A/cc%0A/points%0A%0ACustom commands:%0A");
+        SB_append(&b, "Commands:%0A/cc%0A/points%0A%0ACustom commands:%0A%60");
         DIR *dir = opendir("commands");
         if (!dir)
           return;
@@ -71,7 +71,10 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
           }
           de = readdir(dir);
         }
+        SB_append(&b, "%60");
+        bot->parse_mode = "MarkdownV2";
         Bot_sendTextMessage(bot, chat_id, b.ptr);
+        bot->parse_mode = NULL;
       } else if (cstr_starts_with(txt, "/cc"))
         Bot_sendTextMessage(bot, chat_id, __VERSION__);
       else if (cstr_starts_with(txt, "/addcommand") && user_id == admin_id) {
