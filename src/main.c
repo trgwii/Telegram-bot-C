@@ -3,6 +3,7 @@
 #include "str.h"
 #include <assert.h>
 #include <curl/curl.h>
+#include <dirent.h>
 #include <sqlite3.h>
 #include <sys/stat.h>
 
@@ -48,11 +49,30 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
       }
     } else if (chat_id && cstr_eql("text", msg->name->string)) {
       const char *txt = get_string(msg->value);
-      if (cstr_starts_with(txt, "/help"))
-        Bot_sendTextMessage(bot, chat_id, "Commands:%0A/fart%0A/cc%0A/points");
-      else if (cstr_starts_with(txt, "/fart"))
-        Bot_sendTextMessage(bot, chat_id, "farted! 🗿");
-      else if (cstr_starts_with(txt, "/cc"))
+      if (cstr_starts_with(txt, "/help")) {
+        char cmds[4096];
+        SB b = SB_fromArray(cmds);
+        SB_append(&b, "Commands:%0A/cc%0A/points%0A%0ACustom commands:%0A");
+        DIR *dir = opendir("commands");
+        if (!dir)
+          return;
+        struct dirent *de = readdir(dir);
+        bool first = true;
+        while (de) {
+          size_t name_len = cstr_len(de->d_name);
+          if (name_len > 4) {
+            if (first) {
+              first = false;
+              SB_append(&b, "!");
+            } else {
+              SB_append(&b, ", !");
+            }
+            SB_appendLen(&b, de->d_name, name_len - 4);
+          }
+          de = readdir(dir);
+        }
+        Bot_sendTextMessage(bot, chat_id, b.ptr);
+      } else if (cstr_starts_with(txt, "/cc"))
         Bot_sendTextMessage(bot, chat_id, __VERSION__);
       else if (cstr_starts_with(txt, "/addcommand") && user_id == admin_id) {
         printf("addcommand: %s\n", txt);
