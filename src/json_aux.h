@@ -1,3 +1,5 @@
+#include "json.h"
+#include <assert.h>
 
 // assert that a json_value_t is an object, and iterate its fields
 #define iterate_object(value, name)                                            \
