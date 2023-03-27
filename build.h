@@ -2,22 +2,20 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <time.h>
 
 #define CC "zig cc"
 #define LIBS "-lcurl -lsqlite3"
 
-#define DISABLED                                                               \
-  "-Wno-disabled-macro-expansion "                                             \
-  "-Wno-padded "                                                               \
-  "-Wno-declaration-after-statement"
 #define FLAGS                                                                  \
-  "-Wall "                                                                     \
-  "-Wextra "                                                                   \
-  "-Wpedantic "                                                                \
   "-Weverything "                                                              \
-  "-Werror " DISABLED
+  "-Werror "                                                                   \
+  "-Wno-padded "                                                               \
+  "-Wno-disabled-macro-expansion "                                             \
+  "-Wno-declaration-after-statement"
 
 static bool ok = true;
 static char *failed = NULL;
@@ -72,6 +70,14 @@ static inline void measure_end(char *name, double start) {
   measured_failing = !ok;
   measured_total += measured_time;
   measured_col += 20;
+}
+
+static inline bool cli_command(int argc, char **argv, char *command) {
+  for (int i = 0; i < argc; i++) {
+    if (strcmp(argv[i], command) == 0)
+      return true;
+  }
+  return false;
 }
 
 static inline int done(void) {

@@ -4,30 +4,10 @@ exit $?
 #*/
 
 #include "build.h"
-#include <stdlib.h>
-#include <string.h>
 
 int main(int argc, char **argv) {
-  bool clean = false;
-  bool self = false;
-  bool fetch = false;
-  bool test = false;
-  bool build = false;
 
-  for (int i = 0; i < argc; i++) {
-    if (strcmp(argv[i], "clean") == 0)
-      clean = true;
-    else if (strcmp(argv[i], "self") == 0)
-      self = true;
-    else if (strcmp(argv[i], "fetch") == 0)
-      fetch = true;
-    else if (strcmp(argv[i], "test") == 0)
-      test = true;
-    else if (strcmp(argv[i], "build") == 0)
-      build = true;
-  }
-
-  if (!clean && !self && !fetch && !test && !build) {
+  if (argc <= 1) {
     printf("Usage:\n\t\x1b[37mzig run -lc build.c -- [clean] [self] [fetch] "
            "[test] "
            "[build]\x1b[0m\n\n\t\x1b[32mclean\x1b[0m - Remove output "
@@ -40,7 +20,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  if (clean) {
+  if (cli_command(argc, argv, "clean")) {
     double start = measure_start();
     RM("test");
     RM("o");
@@ -48,13 +28,13 @@ int main(int argc, char **argv) {
     measure_end("clean", start);
   }
 
-  if (self) {
+  if (cli_command(argc, argv, "self")) {
     double start = measure_start();
     CMD(CC " " FLAGS " build.c -o - > /dev/null");
     measure_end("self", start);
   }
 
-  if (fetch) {
+  if (cli_command(argc, argv, "fetch")) {
     double start = measure_start();
     HTTP_GET("https://raw.githubusercontent.com/sheredom/json.h/master/json.h",
              "src/json.h");
@@ -62,14 +42,14 @@ int main(int argc, char **argv) {
     measure_end("fetch", start);
   }
 
-  if (test) {
+  if (cli_command(argc, argv, "test")) {
     double start = measure_start();
     DIR("test");
     TEST("str");
     measure_end("test", start);
   }
 
-  if (build) {
+  if (cli_command(argc, argv, "build")) {
     double start = measure_start();
     DIR("o");
     OBJ("str");
