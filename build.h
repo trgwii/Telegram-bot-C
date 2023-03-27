@@ -10,19 +10,19 @@
 #define CC "zig cc"
 #define LIBS "-lcurl -lsqlite3"
 
-#ifdef __GNUC__
-#define FLAGS                                                                  \
-  "-Wall "                                                                     \
-  "-Wextra "                                                                   \
-  "-Wpedantic "                                                                \
-  "-Werror"
-#else
+#ifdef __clang__
 #define FLAGS                                                                  \
   "-Weverything "                                                              \
   "-Werror "                                                                   \
   "-Wno-padded "                                                               \
   "-Wno-disabled-macro-expansion "                                             \
   "-Wno-declaration-after-statement"
+#else
+#define FLAGS                                                                  \
+  "-Wall "                                                                     \
+  "-Wextra "                                                                   \
+  "-Wpedantic "                                                                \
+  "-Werror"
 #endif
 
 static bool ok = true;

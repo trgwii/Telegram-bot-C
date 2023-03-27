@@ -13,7 +13,7 @@ For gcc, edit [build.h line 10](build.h#L10) to `#define CC "gcc"`
 # or:
 # zig run -lc build.c -- clean self fetch test build
 # or (with gcc):
-# gcc -lc build.c -o build/build && ./build/build clean self fetch test build
+# gcc build.c -o build/build && ./build/build clean self fetch test build
 
 ./build/main <token>
 ```
