@@ -81,7 +81,7 @@ static void measure_end(char *name, double start) {
     return;
   double measured_time =
       (((double)end.tv_sec + (double)end.tv_nsec / 1000000000) - start) * 1000;
-  printf("%s%s:\t\x1b[33m%f\x1b[0mms",
+  printf("%s\x1b[36m%s\x1b[0m:\t\x1b[33m%f\x1b[0mms",
          measured ? measured_col >= measured_col_max ? "\n" : "\t" : "", name,
          measured_time);
   fflush(stdout);
@@ -104,7 +104,7 @@ static bool cli_command(int argc, char **argv, char *command) {
 
 // Use from build.c's main() to print build results and produce an exit code
 static int done(void) {
-  printf("%stotal: \x1b[33m%f\x1b[0mms",
+  printf("%s\x1b[36mtotal\x1b[0m: \x1b[33m%f\x1b[0mms",
          measured_col >= measured_col_max ? "\n" : "\t", measured_total);
   if (measured_col >= measured_col_max)
     measured_col = 0;
