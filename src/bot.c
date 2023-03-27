@@ -103,6 +103,7 @@ void Bot_sendTextMessageLen(Bot *bot, long long chat_id, const char *text,
       (size_t)snprintf(url.ptr + url.len, url.cap - url.len, "%lld", chat_id);
   SB_append(&url, "&text=");
   SB_appendLen(&url, text, text_len);
+  SB_append(&url, "&disable_web_page_preview=1");
   curl_easy_setopt(bot->curl, CURLOPT_URL, bot->url);
   bot->data_offset = 0;
   curl_easy_setopt(bot->curl, CURLOPT_WRITEDATA, bot);
