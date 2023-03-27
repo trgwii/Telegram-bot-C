@@ -116,5 +116,5 @@ static int done(void) {
     printf("\x1b[31m%s\x1b[0m\n", failed);
   }
 
-  return ok == true;
+  return !ok;
 }
