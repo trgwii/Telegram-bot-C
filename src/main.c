@@ -4,6 +4,9 @@
 #include <assert.h>
 #include <curl/curl.h>
 #include <sqlite3.h>
+#include <sys/stat.h>
+
+static long long admin_id = 75118762;
 
 static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
   sqlite3 *db = user_data;
@@ -51,7 +54,78 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
         Bot_sendTextMessage(bot, chat_id, "farted! 🗿");
       else if (cstr_starts_with(txt, "/cc"))
         Bot_sendTextMessage(bot, chat_id, __VERSION__);
-      else if (cstr_starts_with(txt, "/points")) {
+      else if (cstr_starts_with(txt, "/addcommand") && user_id == admin_id) {
+        mkdir("commands", 0755);
+        long cmd_start = cstr_indexof(txt, ' ');
+        if (cmd_start == -1)
+          return;
+        cmd_start += 1;
+        long cmd_end = cstr_indexof(txt + cmd_start, ' ');
+        if (cmd_end == -1)
+          return;
+        cmd_end += cmd_start;
+        char filenameData[1024];
+        SB filename = SB_fromArray(filenameData);
+        SB_append(&filename, "commands/");
+        SB_appendLen(&filename, txt + (size_t)cmd_start,
+                     (size_t)cmd_end - (size_t)cmd_start);
+        SB_append(&filename, ".txt");
+        FILE *file = fopen(filename.ptr, "w");
+        size_t bytes_to_write =
+            ((json_string_t *)(msg->value->payload))->string_size -
+            ((size_t)cmd_end + 1);
+        size_t total_bytes_written = 0;
+        while (total_bytes_written < bytes_to_write) {
+          size_t bytes_written =
+              fwrite(txt + (size_t)cmd_end + 1 + total_bytes_written, 1,
+                     bytes_to_write - total_bytes_written, file);
+          if (bytes_written == 0) {
+            fclose(file);
+            return;
+          }
+          total_bytes_written += bytes_written;
+        }
+        fclose(file);
+      } else if (cstr_starts_with(txt, "/delcommand") && user_id == admin_id) {
+        long cmd_start = cstr_indexof(txt, ' ');
+        if (cmd_start == -1)
+          return;
+        cmd_start += 1;
+        char path[1024];
+        SB p = SB_fromArray(path);
+        SB_append(&p, "commands/");
+        SB_append(&p, txt + cmd_start);
+        SB_append(&p, ".txt");
+        remove(p.ptr);
+      } else if (cstr_starts_with(txt, "!")) {
+        char fData[1024];
+        SB f = SB_fromArray(fData);
+        SB_append(&f, "commands/");
+        SB_append(&f, txt + 1);
+        SB_append(&f, ".txt");
+        printf("%s\n", f.ptr);
+        struct stat st;
+        if (stat(f.ptr, &st) != 0)
+          return;
+        if (!S_ISREG(st.st_mode))
+          return;
+        FILE *file = fopen(f.ptr, "r");
+        size_t total_bytes_read = 0;
+        char fmsg[1024];
+        while (total_bytes_read < (size_t)st.st_size) {
+          size_t bytes_read =
+              fread(fmsg + total_bytes_read, 1,
+                    (size_t)st.st_size - total_bytes_read, file);
+          if (bytes_read == 0) {
+            fclose(file);
+            return;
+          }
+          total_bytes_read += bytes_read;
+        }
+        fclose(file);
+        fmsg[total_bytes_read] = 0;
+        Bot_sendTextMessageLen(bot, chat_id, fmsg, total_bytes_read);
+      } else if (cstr_starts_with(txt, "/points")) {
         char pointsMsgData[1024];
         SB pmsg = SB_fromArray(pointsMsgData);
         SB_append(&pmsg, "Rep points for ");

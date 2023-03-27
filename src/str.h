@@ -10,6 +10,9 @@ unsigned long cstr_len(const char *s);
 // Compare C strings for equality
 bool cstr_eql(const char *a, const char *b);
 
+// Get the index of a character in a string
+long cstr_indexof(const char *haystack, char needle);
+
 // Check if a C string haystack starts with a needle
 bool cstr_starts_with(const char *haystack, const char *needle);
 

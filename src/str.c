@@ -22,9 +22,21 @@ bool cstr_eql(const char *a, const char *b) {
 }
 
 bool cstr_starts_with(const char *haystack, const char *needle) {
-  while (*haystack && *needle && *haystack++ == *needle++)
-    ;
+  while (*haystack && *needle && *haystack == *needle) {
+    haystack++;
+    needle++;
+  }
   return !*needle;
+}
+
+long cstr_indexof(const char *haystack, char needle) {
+  long i = 0;
+  while (haystack[i]) {
+    if (haystack[i] == needle)
+      return i;
+    i++;
+  }
+  return -1;
 }
 
 SB SB_fromPtrLenCap(char *ptr, size_t len, size_t cap) {
