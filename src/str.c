@@ -27,59 +27,32 @@ bool cstr_starts_with(const char *haystack, const char *needle) {
   return !*needle;
 }
 
-Str Str_fromC(char *cstr) {
-  Str str = {
-      .ptr = cstr,
-      .len = cstr_len(cstr),
-  };
-  return str;
-}
-
-Str Str_fromPtrLen(char *ptr, size_t len) {
-  Str str = {
+SB SB_fromPtrLenCap(char *ptr, size_t len, size_t cap) {
+  SB b = {
       .ptr = ptr,
       .len = len,
-  };
-  return str;
-}
-
-SB SB_fromPtrLen(char *ptr, size_t len, void *(*realloc)(void *, size_t)) {
-  SB b = {
-      .str = {.ptr = ptr, .len = 0},
-      .cap = len,
-      .realloc = realloc,
+      .cap = cap,
   };
   return b;
 }
 
-void SB_zend(SB *b) { ((char *)b->str.ptr)[b->str.len] = 0; }
-
-void SB_append(SB *b, Str str) {
-  if (b->str.len + str.len + 1 >= b->cap) {
-    if (!b->realloc)
-      return;
-    size_t new_cap = b->cap ? b->cap : 16;
-    while (new_cap < b->str.len + str.len + 1)
-      new_cap *= 2;
-    void *new_ptr = b->realloc(b->str.ptr, new_cap);
-    if (!new_ptr)
-      return;
-    b->str.ptr = new_ptr;
-    b->cap = new_cap;
-  }
-  cstr_cpy(str.ptr, b->str.ptr + b->str.len, str.len);
-  b->str.len += str.len;
-  SB_zend(b);
+SB SB_fromPtrCap(char *ptr, size_t cap) {
+  SB b = {
+      .ptr = ptr,
+      .len = 0,
+      .cap = cap,
+  };
+  return b;
 }
 
-void SB_appendC(SB *b, char *cstr) { SB_append(b, Str_fromC(cstr)); }
+void SB_zend(SB *b) { b->ptr[b->len] = 0; }
 
-void SB_shrink(SB *b) {
-  if (b->realloc && b->cap > b->str.len + 1) {
-    void *new_ptr = b->realloc(b->str.ptr, b->str.len + 1);
-    if (!new_ptr)
-      return;
-    b->cap = b->str.len + 1;
-    SB_zend(b);
-  }
+void SB_append(SB *b, const char *str) { SB_appendLen(b, str, cstr_len(str)); }
+
+void SB_appendLen(SB *b, const char *str, size_t len) {
+  if (b->len + len + 1 >= b->cap)
+    return;
+  cstr_cpy(str, b->ptr + b->len, len);
+  b->len += len;
+  SB_zend(b);
 }

@@ -1,28 +1,9 @@
 #include "bot.h"
+#include "json_aux.h"
 #include "str.h"
 #include <assert.h>
 #include <curl/curl.h>
 #include <sqlite3.h>
-
-#define iterate_object(value, name)                                            \
-  for (json_object_element_t *name =                                           \
-           (assert(value->type == json_type_object),                           \
-            ((json_object_t *)(value->payload))->start);                       \
-       name; name = name->next)
-
-#define iterate_array(value, name)                                             \
-  for (json_array_element_t *name =                                            \
-           (assert(value->type == json_type_array),                            \
-            ((json_array_t *)(value->payload))->start);                        \
-       name; name = name->next)
-
-#define get_string(value)                                                      \
-  (assert(value->type == json_type_string),                                    \
-   ((json_string_t *)(value->payload))->string)
-
-#define get_long(value)                                                        \
-  (assert(value->type == json_type_number),                                    \
-   strtol(((json_number_t *)(value->payload))->number, NULL, 10))
 
 static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
   sqlite3 *db = user_data;
@@ -73,19 +54,19 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
       else if (cstr_starts_with(txt, "/points")) {
         char pointsMsgData[1024];
         SB pmsg = SB_fromArray(pointsMsgData);
-        SB_appendC(&pmsg, "Rep points for ");
+        SB_append(&pmsg, "Rep points for ");
         const char *rep_points_first_name = first_name;
         long long rep_points_user_id = user_id;
         if (reply_to_user_id) {
           rep_points_user_id = reply_to_user_id;
           rep_points_first_name = reply_to_first_name;
         }
-        SB_appendC(&pmsg, (char *)(uintptr_t)rep_points_first_name);
+        SB_append(&pmsg, (char *)(uintptr_t)rep_points_first_name);
         if (chat_title) {
-          SB_appendC(&pmsg, " in ");
-          SB_appendC(&pmsg, (char *)(uintptr_t)chat_title);
+          SB_append(&pmsg, " in ");
+          SB_append(&pmsg, (char *)(uintptr_t)chat_title);
         }
-        SB_appendC(&pmsg, ": ");
+        SB_append(&pmsg, ": ");
         sqlite3_stmt *stmt;
         assert(sqlite3_prepare(db,
                                "SELECT points FROM rep WHERE chat_id = ? "
@@ -100,9 +81,9 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
           if (result == SQLITE_ROW) {
             long long points = sqlite3_column_int64(stmt, 0);
 
-            pmsg.str.len += (size_t)snprintf(pmsg.str.ptr + pmsg.str.len, 100,
-                                             "%lld", points);
-            Bot_sendTextMessage(bot, chat_id, pmsg.str.ptr);
+            pmsg.len +=
+                (size_t)snprintf(pmsg.ptr + pmsg.len, 100, "%lld", points);
+            Bot_sendTextMessageLen(bot, chat_id, pmsg.ptr, pmsg.len);
             break;
           } else if (result == SQLITE_DONE) {
             break;
@@ -137,11 +118,10 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
             json_string_t *first_name_str = mem->value->payload;
             char text[1024];
             SB b = SB_fromArray(text);
-            SB_appendC(&b, "Welcome ");
-            SB_append(&b,
-                      Str_fromPtrLen((char *)(uintptr_t)first_name_str->string,
-                                     first_name_str->string_size));
-            Bot_sendTextMessage(bot, chat_id, b.str.ptr);
+            SB_append(&b, "Welcome ");
+            SB_appendLen(&b, first_name_str->string,
+                         first_name_str->string_size);
+            Bot_sendTextMessageLen(bot, chat_id, b.ptr, b.len);
           }
         }
       }
@@ -152,11 +132,9 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
           json_string_t *first_name_str = mem->value->payload;
           char text[1024];
           SB b = SB_fromArray(text);
-          SB_appendC(&b, "Bye ");
-          SB_append(&b,
-                    Str_fromPtrLen((char *)(uintptr_t)first_name_str->string,
-                                   first_name_str->string_size));
-          Bot_sendTextMessage(bot, chat_id, b.str.ptr);
+          SB_append(&b, "Bye ");
+          SB_appendLen(&b, first_name_str->string, first_name_str->string_size);
+          Bot_sendTextMessageLen(bot, chat_id, b.ptr, b.len);
         }
       }
     }

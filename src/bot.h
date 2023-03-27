@@ -37,5 +37,7 @@ typedef struct BotInfo {
 BotInfo Bot_getMe(Bot *bot);
 
 void Bot_sendTextMessage(Bot *bot, long long chat_id, const char *text);
+void Bot_sendTextMessageLen(Bot *bot, long long chat_id, const char *text,
+                            size_t text_len);
 
 void Bot_getUpdates(Bot *bot);
