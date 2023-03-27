@@ -10,12 +10,20 @@
 #define CC "zig cc"
 #define LIBS "-lcurl -lsqlite3"
 
+#ifdef __GNUC__
+#define FLAGS                                                                  \
+  "-Wall "                                                                     \
+  "-Wextra "                                                                   \
+  "-Wpedantic "                                                                \
+  "-Werror"
+#else
 #define FLAGS                                                                  \
   "-Weverything "                                                              \
   "-Werror "                                                                   \
   "-Wno-padded "                                                               \
   "-Wno-disabled-macro-expansion "                                             \
   "-Wno-declaration-after-statement"
+#endif
 
 static bool ok = true;
 static char *failed = NULL;
@@ -40,7 +48,7 @@ static double measured_total = 0;
 
 #define OBJ(name) CMD(CC " " FLAGS " src/" name ".c -c -o o/" name ".o")
 
-#define EXE(cmd) CMD(CC " " FLAGS " " LIBS " " cmd)
+#define EXE(cmd) CMD(CC " " FLAGS " " cmd " " LIBS)
 
 #define TEST(name)                                                             \
   CMD(CC " " FLAGS " src/" name "_test.c -o test/" name " && ./test/" name     \
