@@ -24,8 +24,9 @@ int main(int argc, char **argv) {
 
   if (cli_command(argc, argv, "clean")) {
     double start = measure_start();
-    RM("test");
+    RM("src/json.h");
     RM("o");
+    RM("test");
     RM("build");
     measure_end("clean", start);
   }

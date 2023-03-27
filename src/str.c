@@ -45,8 +45,6 @@ SB SB_fromPtrCap(char *ptr, size_t cap) {
   return b;
 }
 
-void SB_zend(SB *b) { b->ptr[b->len] = 0; }
-
 void SB_append(SB *b, const char *str) { SB_appendLen(b, str, cstr_len(str)); }
 
 void SB_appendLen(SB *b, const char *str, size_t len) {
@@ -54,5 +52,5 @@ void SB_appendLen(SB *b, const char *str, size_t len) {
     return;
   cstr_cpy(str, b->ptr + b->len, len);
   b->len += len;
-  SB_zend(b);
+  b->ptr[b->len] = 0;
 }

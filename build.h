@@ -7,7 +7,10 @@
 #include <sys/stat.h>
 #include <time.h>
 
+// Change this to your compiler of choice
 #define CC "zig cc"
+
+// System dependencies
 #define LIBS "-lcurl -lsqlite3"
 
 #ifdef __clang__
@@ -33,8 +36,10 @@ static char measured_col_max = 60;
 static bool measured_failing = false;
 static double measured_total = 0;
 
+// Ensure a directory exists
 #define DIR(name) mkdir(name, 0755)
 
+// Run a command
 #define CMD(command)                                                           \
   do {                                                                         \
     char *cmd = command;                                                       \
@@ -44,25 +49,32 @@ static double measured_total = 0;
     }                                                                          \
   } while (false)
 
+// Fetch a remote HTTP(S) file
 #define HTTP_GET(url, file) CMD("curl -s " url " -o " file)
 
+// Build an object file (src/<name>.c -> o/<name>.o)
 #define OBJ(name) CMD(CC " " FLAGS " src/" name ".c -c -o o/" name ".o")
 
+// Build an executable
 #define EXE(cmd) CMD(CC " " FLAGS " " cmd " " LIBS)
 
+// Build and run a test (src/<name>_test.c -> test/<name>)
 #define TEST(name)                                                             \
   CMD(CC " " FLAGS " src/" name "_test.c -o test/" name " && ./test/" name     \
          " > /dev/null")
 
+// Recursively remove a directory or file
 #define RM(name) system("rm -r " name " 2> /dev/null")
 
-static inline double measure_start(void) {
+// Get the current system clock for measuring a fenced code block
+static double measure_start(void) {
   struct timespec start;
   clock_gettime(CLOCK_REALTIME, &start);
   return (double)start.tv_sec + (double)start.tv_nsec / 1000000000;
 }
 
-static inline void measure_end(char *name, double start) {
+// Complete a measurement by passing in a return value from measure_start()
+static void measure_end(char *name, double start) {
   struct timespec end;
   clock_gettime(CLOCK_REALTIME, &end);
   if (measured_failing)
@@ -81,7 +93,8 @@ static inline void measure_end(char *name, double start) {
   measured_col += 20;
 }
 
-static inline bool cli_command(int argc, char **argv, char *command) {
+// Check if a CLI command was passed (or always true if "all" was passed)
+static bool cli_command(int argc, char **argv, char *command) {
   for (int i = 0; i < argc; i++) {
     if (strcmp(argv[i], "all") == 0 || strcmp(argv[i], command) == 0)
       return true;
@@ -89,7 +102,8 @@ static inline bool cli_command(int argc, char **argv, char *command) {
   return false;
 }
 
-static inline int done(void) {
+// Use from build.c's main() to print build results and produce an exit code
+static int done(void) {
   printf("%stotal: \x1b[33m%f\x1b[0mms",
          measured_col >= measured_col_max ? "\n" : "\t", measured_total);
   if (measured_col >= measured_col_max)
