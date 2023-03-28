@@ -7,7 +7,10 @@
 #include <sqlite3.h>
 #include <sys/stat.h>
 
-static long long admin_id = 75118762;
+// TODO: array or argv?
+static long long admin_id = 75118762; // TRGWII
+// static long long admin_id = 126131628; // bdnugget
+
 
 static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
   sqlite3 *db = user_data;
@@ -52,7 +55,7 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
       if (cstr_starts_with(txt, "/help")) {
         char cmds[4096];
         SB b = SB_fromArray(cmds);
-        SB_append(&b, "Commands:%0A/cc%0A/points%0A%0ACustom commands:%0A%60");
+        SB_append(&b, "Commands:\n/cc\n/points\n\nCustom commands:\n`");
         DIR *dir = opendir("commands");
         if (!dir)
           return;
@@ -63,15 +66,15 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
           if (name_len > 4) {
             if (first) {
               first = false;
-              SB_append(&b, "!");
+              SB_append(&b, "\\!");
             } else {
-              SB_append(&b, ", !");
+              SB_append(&b, ", \\!");
             }
             SB_appendLen(&b, de->d_name, name_len - 4);
           }
           de = readdir(dir);
         }
-        SB_append(&b, "%60");
+        SB_append(&b, "`");
         bot->parse_mode = "MarkdownV2";
         Bot_sendTextMessage(bot, chat_id, b.ptr);
         bot->parse_mode = NULL;

@@ -125,7 +125,6 @@ void Bot_sendTextMessageLen(Bot *bot, long long chat_id, const char *text,
   printf("%s\n", bot->data);
 }
 
-
 void Bot_getUpdates(Bot *bot) {
   SB url = SB_fromPtrLenCap(bot->url, bot->url_offset, sizeof(bot->url));
   if (bot->last_update_id) {
