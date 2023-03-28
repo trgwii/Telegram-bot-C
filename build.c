@@ -33,7 +33,11 @@ int main(int argc, char **argv) {
 
   if (cli_command(argc, argv, "self")) {
     double start = measure_start();
+#ifdef _WIN32
+    CMD(CC " " FLAGS " build.c -o - >NUL");
+#else
     CMD(CC " " FLAGS " build.c -o - > /dev/null");
+#endif
     measure_end("self", start);
   }
 

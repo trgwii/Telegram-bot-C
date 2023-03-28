@@ -70,34 +70,46 @@ static double measured_total = 0;
 #define EXE(cmd) CMD(CC " " FLAGS " " cmd " " LIBS)
 
 // Build and run a test (src/<name>_test.c -> test/<name>)
+#ifdef _WIN32
+#define TEST(name)                                                             \
+  CMD(CC " " FLAGS " src/" name "_test.c -o test/" name ".exe && test\\" name  \
+         " >NUL")
+#else
 #define TEST(name)                                                             \
   CMD(CC " " FLAGS " src/" name "_test.c -o test/" name " && ./test/" name     \
          " > /dev/null")
+#endif
 
 // Recursively remove a directory or file
+#ifdef _WIN32
+#define RM(name) system("rmdir /s /q " name " 2>NUL")
+#else
 #define RM(name) system("rm -r " name " 2> /dev/null")
+#endif
 
 // Get the current system clock for measuring a fenced code block
 static double measure_start(void) {
-  struct timespec start;
 #ifdef _WIN32
+  return 0;
 #else
+  struct timespec start;
   clock_gettime(CLOCK_REALTIME, &start);
-#endif
   return (double)start.tv_sec + (double)start.tv_nsec / 1000000000;
+#endif
 }
 
 // Complete a measurement by passing in a return value from measure_start()
 static void measure_end(char *name, double start) {
-  struct timespec end;
-#ifdef _WIN32
-#else
-  clock_gettime(CLOCK_REALTIME, &end);
-#endif
   if (measured_failing)
     return;
+#ifdef _WIN32
+  double measured_time = start * 0;
+#else
+  struct timespec end;
+  clock_gettime(CLOCK_REALTIME, &end);
   double measured_time =
       (((double)end.tv_sec + (double)end.tv_nsec / 1000000000) - start) * 1000;
+#endif
   printf("%s\x1b[36m%s\x1b[0m:\t\x1b[33m%f\x1b[0mms",
          measured ? measured_col >= measured_col_max ? "\n" : "\t" : "", name,
          measured_time);

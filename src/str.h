@@ -2,10 +2,10 @@
 #include <stddef.h>
 
 // Simple pointer-to-pointer copy
-void cstr_cpy(const char *src, char *dest, unsigned long len);
+void cstr_cpy(const char *src, char *dest, size_t len);
 
 // Get length of a C string
-unsigned long cstr_len(const char *s);
+size_t cstr_len(const char *s);
 
 // Compare C strings for equality
 bool cstr_eql(const char *a, const char *b);

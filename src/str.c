@@ -1,13 +1,13 @@
 #include "str.h"
 
-void cstr_cpy(const char *src, char *dest, unsigned long len) {
-  for (unsigned long i = 0; i < len; i++) {
+void cstr_cpy(const char *src, char *dest, size_t len) {
+  for (size_t i = 0; i < len; i++) {
     *dest++ = *src++;
   }
 }
 
-unsigned long cstr_len(const char *s) {
-  unsigned long len = 0;
+size_t cstr_len(const char *s) {
+  size_t len = 0;
   while (*s++)
     len++;
   return len;
