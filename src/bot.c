@@ -103,7 +103,14 @@ void Bot_sendTextMessageLen(Bot *bot, long long chat_id, const char *text,
   url.len +=
       (size_t)snprintf(url.ptr + url.len, url.cap - url.len, "%lld", chat_id);
   SB_append(&url, "&text=");
-  SB_appendLen(&url, text, text_len);
+
+  // Use curl_easy_escape to encode the text string
+  char *encoded_text = curl_easy_escape(bot->curl, text, (int)text_len);
+  if (encoded_text) {
+    SB_append(&url, encoded_text);
+    curl_free(encoded_text);
+  }
+
   SB_append(&url, "&disable_web_page_preview=1");
   if (bot->parse_mode) {
     SB_append(&url, "&parse_mode=");
@@ -117,6 +124,7 @@ void Bot_sendTextMessageLen(Bot *bot, long long chat_id, const char *text,
   bot->data[bot->data_offset] = 0;
   printf("%s\n", bot->data);
 }
+
 
 void Bot_getUpdates(Bot *bot) {
   SB url = SB_fromPtrLenCap(bot->url, bot->url_offset, sizeof(bot->url));
