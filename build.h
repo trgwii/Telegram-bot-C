@@ -1,5 +1,8 @@
+#ifdef _WIN32
+#include <windows.h>
+#else
 #define _GNU_SOURCE
-
+#endif
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,13 +16,17 @@
 // System dependencies
 #define LIBS "-lcurl -lsqlite3"
 
+// "-target x86_64-linux-gnu"
+// "-target x86_64-windows-gnu"
+
 #ifdef __clang__
 #define FLAGS                                                                  \
   "-Weverything "                                                              \
   "-Werror "                                                                   \
   "-Wno-padded "                                                               \
   "-Wno-disabled-macro-expansion "                                             \
-  "-Wno-declaration-after-statement"
+  "-Wno-declaration-after-statement "                                          \
+  "-Wno-used-but-marked-unused"
 #else
 #define FLAGS                                                                  \
   "-Wall "                                                                     \
@@ -37,7 +44,11 @@ static bool measured_failing = false;
 static double measured_total = 0;
 
 // Ensure a directory exists
+#ifdef _WIN32
+#define DIR(name) mkdir(name)
+#else
 #define DIR(name) mkdir(name, 0755)
+#endif
 
 // Run a command
 #define CMD(command)                                                           \
@@ -69,14 +80,20 @@ static double measured_total = 0;
 // Get the current system clock for measuring a fenced code block
 static double measure_start(void) {
   struct timespec start;
+#ifdef _WIN32
+#else
   clock_gettime(CLOCK_REALTIME, &start);
+#endif
   return (double)start.tv_sec + (double)start.tv_nsec / 1000000000;
 }
 
 // Complete a measurement by passing in a return value from measure_start()
 static void measure_end(char *name, double start) {
   struct timespec end;
+#ifdef _WIN32
+#else
   clock_gettime(CLOCK_REALTIME, &end);
+#endif
   if (measured_failing)
     return;
   double measured_time =

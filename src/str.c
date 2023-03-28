@@ -40,21 +40,19 @@ long cstr_indexof(const char *haystack, char needle) {
 }
 
 SB SB_fromPtrLenCap(char *ptr, size_t len, size_t cap) {
-  SB b = {
+  return (SB){
       .ptr = ptr,
       .len = len,
       .cap = cap,
   };
-  return b;
 }
 
 SB SB_fromPtrCap(char *ptr, size_t cap) {
-  SB b = {
+  return (SB){
       .ptr = ptr,
       .len = 0,
       .cap = cap,
   };
-  return b;
 }
 
 void SB_append(SB *b, const char *str) { SB_appendLen(b, str, cstr_len(str)); }
