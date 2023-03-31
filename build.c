@@ -3,6 +3,33 @@
 exit $?
 #*/
 
+// Change this to your compiler of choice
+#define CC "zig cc"
+
+#define INCLUDES "-Ideps/curl-8.0.1_5-win64-mingw/include"
+
+// System dependencies
+#define LIBS "-lcurl -lsqlite3"
+
+// "-target x86_64-linux-gnu"
+// "-target x86_64-windows-gnu"
+
+#ifdef __clang__
+#define FLAGS                                                                  \
+  "-Weverything "                                                              \
+  "-Werror "                                                                   \
+  "-Wno-padded "                                                               \
+  "-Wno-disabled-macro-expansion "                                             \
+  "-Wno-declaration-after-statement "                                          \
+  "-Wno-used-but-marked-unused"
+#else
+#define FLAGS                                                                  \
+  "-Wall "                                                                     \
+  "-Wextra "                                                                   \
+  "-Wpedantic "                                                                \
+  "-Werror"
+#endif
+
 #include "build.h"
 
 int main(int argc, char **argv) {
@@ -24,6 +51,7 @@ int main(int argc, char **argv) {
 
   if (cli_command(argc, argv, "clean")) {
     double start = measure_start();
+    RM("deps");
     RM("src/json.h");
     RM("o");
     RM("test");
@@ -43,6 +71,14 @@ int main(int argc, char **argv) {
 
   if (cli_command(argc, argv, "fetch")) {
     double start = measure_start();
+#ifdef _WIN32
+    DIR("deps");
+    HTTP_GET("https://curl.se/windows/dl-8.0.1_5/curl-8.0.1_5-win64-mingw.zip",
+             "deps/curl-8.0.1_5-win64-mingw.zip");
+    SetCurrentDirectory("deps");
+    CMD("tar -xf curl-8.0.1_5-win64-mingw.zip");
+    SetCurrentDirectory("..");
+#endif
     HTTP_GET("https://raw.githubusercontent.com/sheredom/json.h/master/json.h",
              "src/json.h");
 

@@ -5,9 +5,9 @@
 typedef struct Bot {
   CURL *curl;
   char *token;
-  unsigned long token_len;
+  size_t token_len;
 
-  unsigned long url_offset;
+  size_t url_offset;
   char url[1024];
 
   unsigned long data_offset;

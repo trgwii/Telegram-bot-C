@@ -1,7 +1,8 @@
+deps
+src/json.h
 o
 test
 build
-src/json.h
 
 bot.db
 commands

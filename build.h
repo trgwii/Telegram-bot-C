@@ -10,31 +10,6 @@
 #include <sys/stat.h>
 #include <time.h>
 
-// Change this to your compiler of choice
-#define CC "zig cc"
-
-// System dependencies
-#define LIBS "-lcurl -lsqlite3"
-
-// "-target x86_64-linux-gnu"
-// "-target x86_64-windows-gnu"
-
-#ifdef __clang__
-#define FLAGS                                                                  \
-  "-Weverything "                                                              \
-  "-Werror "                                                                   \
-  "-Wno-padded "                                                               \
-  "-Wno-disabled-macro-expansion "                                             \
-  "-Wno-declaration-after-statement "                                          \
-  "-Wno-used-but-marked-unused"
-#else
-#define FLAGS                                                                  \
-  "-Wall "                                                                     \
-  "-Wextra "                                                                   \
-  "-Wpedantic "                                                                \
-  "-Werror"
-#endif
-
 static bool ok = true;
 static char *failed = NULL;
 static bool measured = false;
@@ -64,10 +39,11 @@ static double measured_total = 0;
 #define HTTP_GET(url, file) CMD("curl -s " url " -o " file)
 
 // Build an object file (src/<name>.c -> o/<name>.o)
-#define OBJ(name) CMD(CC " " FLAGS " src/" name ".c -c -o o/" name ".o")
+#define OBJ(name)                                                              \
+  CMD(CC " " FLAGS " " INCLUDES " src/" name ".c -c -o o/" name ".o")
 
 // Build an executable
-#define EXE(cmd) CMD(CC " " FLAGS " " cmd " " LIBS)
+#define EXE(cmd) CMD(CC " " FLAGS " " INCLUDES " " cmd " " LIBS)
 
 // Build and run a test (src/<name>_test.c -> test/<name>)
 #ifdef _WIN32
