@@ -6,10 +6,11 @@ exit $?
 // Change this to your compiler of choice
 #define CC "zig cc"
 
-#define INCLUDES "-Ideps/curl-8.0.1_5-win64-mingw/include"
+#define INCLUDES                                                               \
+  "-Ideps/curl-8.0.1_5-win64-mingw/include -Ideps/sqlite-amalgamation-3410200"
 
 // System dependencies
-#define LIBS "-lcurl -lsqlite3"
+#define LIBS "-lcurl"
 
 // "-target x86_64-linux-gnu"
 // "-target x86_64-windows-gnu"
@@ -21,7 +22,8 @@ exit $?
   "-Wno-padded "                                                               \
   "-Wno-disabled-macro-expansion "                                             \
   "-Wno-declaration-after-statement "                                          \
-  "-Wno-used-but-marked-unused"
+  "-Wno-used-but-marked-unused "                                               \
+  "-Wno-reserved-macro-identifier"
 #else
 #define FLAGS                                                                  \
   "-Wall "                                                                     \
@@ -71,13 +73,23 @@ int main(int argc, char **argv) {
 
   if (cli_command(argc, argv, "fetch")) {
     double start = measure_start();
-#ifdef _WIN32
     DIR("deps");
+#ifdef _WIN32
     HTTP_GET("https://curl.se/windows/dl-8.0.1_5/curl-8.0.1_5-win64-mingw.zip",
              "deps/curl-8.0.1_5-win64-mingw.zip");
     SetCurrentDirectory("deps");
     CMD("tar -xf curl-8.0.1_5-win64-mingw.zip");
     SetCurrentDirectory("..");
+#endif
+    HTTP_GET("https://sqlite.org/2023/sqlite-amalgamation-3410200.zip",
+             "deps/sqlite-amalgamation-3410200.zip");
+
+#ifdef _WIN32
+    SetCurrentDirectory("deps");
+    CMD("tar -xf sqlite-amalgamation-3410200.zip");
+    SetCurrentDirectory("..");
+#else
+    CMD("unzip deps/sqlite-amalgamation-3410200.zip -d deps > /dev/null");
 #endif
     HTTP_GET("https://raw.githubusercontent.com/sheredom/json.h/master/json.h",
              "src/json.h");
@@ -97,6 +109,7 @@ int main(int argc, char **argv) {
     DIR("o");
     OBJ("str");
     OBJ("bot");
+    CMD(CC " -c deps/sqlite-amalgamation-3410200/sqlite3.c -o o/sqlite3.o");
 
     DIR("build");
     EXE("o/*.o src/main.c -o build/main");
