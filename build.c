@@ -6,12 +6,12 @@ exit $?
 // Change this to your compiler of choice
 #define CC "zig cc"
 
-#define INCLUDES                                                               \
-  "-Ideps/curl-8.0.1_5-win64-mingw/include -Ideps/sqlite-amalgamation-3410200"
+#define INCLUDES "-Ideps/curl-8.0.1/include -Ideps/sqlite-amalgamation-3410200"
 
 // System dependencies
 #ifdef _WIN32
-#define LIBS "-Ldeps/curl-8.0.1_5-win64-mingw/bin"
+// TODO: Get static curl going
+#define LIBS ""
 #else
 #define LIBS "-lcurl"
 #endif
@@ -80,10 +80,9 @@ int main(int argc, char **argv) {
     double start = measure_start();
     DIR("deps");
 #ifdef _WIN32
-    HTTP_GET("https://curl.se/windows/dl-8.0.1_5/curl-8.0.1_5-win64-mingw.zip",
-             "deps/curl-8.0.1_5-win64-mingw.zip");
+    HTTP_GET("https://curl.se/download/curl-8.0.1.zip", "deps/curl-8.0.1.zip");
     SetCurrentDirectory("deps");
-    CMD("tar -xf curl-8.0.1_5-win64-mingw.zip");
+    CMD("tar -xf curl-8.0.1.zip");
     SetCurrentDirectory("..");
 #endif
     HTTP_GET("https://sqlite.org/2023/sqlite-amalgamation-3410200.zip",
