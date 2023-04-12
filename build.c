@@ -23,7 +23,8 @@ exit $?
   "-Wno-disabled-macro-expansion "                                             \
   "-Wno-declaration-after-statement "                                          \
   "-Wno-used-but-marked-unused "                                               \
-  "-Wno-reserved-macro-identifier"
+  "-Wno-reserved-macro-identifier "                                            \
+  "-Wno-unsafe-buffer-usage"
 #else
 #define FLAGS                                                                  \
   "-Wall "                                                                     \
