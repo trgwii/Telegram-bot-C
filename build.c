@@ -10,7 +10,11 @@ exit $?
   "-Ideps/curl-8.0.1_5-win64-mingw/include -Ideps/sqlite-amalgamation-3410200"
 
 // System dependencies
+#ifdef _WIN32
+#define LIBS "-Ldeps/curl-8.0.1_5-win64-mingw/bin"
+#else
 #define LIBS "-lcurl"
+#endif
 
 // "-target x86_64-linux-gnu"
 // "-target x86_64-windows-gnu"
@@ -113,7 +117,7 @@ int main(int argc, char **argv) {
     CMD(CC " -c deps/sqlite-amalgamation-3410200/sqlite3.c -o o/sqlite3.o");
 
     DIR("build");
-    EXE("o/*.o src/main.c -o build/main");
+    EXE("o/sqlite3.o o/str.o o/bot.o src/main.c -o build/main");
     measure_end("build", start);
   }
 

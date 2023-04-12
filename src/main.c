@@ -11,7 +11,6 @@
 static long long admin_id = 75118762; // TRGWII
 // static long long admin_id = 126131628; // bdnugget
 
-
 static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
   sqlite3 *db = user_data;
   long long chat_id = 0;
@@ -82,7 +81,11 @@ static void handle_message(void *user_data, Bot *bot, json_object_t *message) {
         Bot_sendTextMessage(bot, chat_id, __VERSION__);
       else if (cstr_starts_with(txt, "/addcommand") && user_id == admin_id) {
         printf("addcommand: %s\n", txt);
+#ifdef _WIN32
+        mkdir("commands");
+#else
         mkdir("commands", 0755);
+#endif
         long cmd_start = cstr_indexof(txt, ' ');
         if (cmd_start == -1)
           return;
@@ -280,7 +283,7 @@ int main(int argc, char **argv) {
   *bot = Bot_init(argv[1], db, handle_message);
   BotInfo info = Bot_getMe(bot);
 
-  printf("id: %lu\n", info.id);
+  printf("id: %llu\n", info.id);
   printf("is_bot: %s\n", info.is_bot ? "true" : "false");
   printf("first_name: %s\n", info.first_name);
   printf("username: %s\n", info.username);
