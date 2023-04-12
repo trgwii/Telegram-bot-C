@@ -89,7 +89,6 @@ static void measure_end(char *name, double start) {
   printf("%s\x1b[36m%s\x1b[0m:\t\x1b[33m%f\x1b[0mms",
          measured ? measured_col >= measured_col_max ? "\n" : "\t" : "", name,
          measured_time);
-  fflush(stdout);
   if (measured_col >= measured_col_max)
     measured_col = 0;
   measured = true;

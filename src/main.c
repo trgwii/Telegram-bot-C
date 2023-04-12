@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <curl/curl.h>
 #include <dirent.h>
+#include <inttypes.h>
 #include <sqlite3.h>
 #include <sys/stat.h>
 
@@ -283,7 +284,7 @@ int main(int argc, char **argv) {
   *bot = Bot_init(argv[1], db, handle_message);
   BotInfo info = Bot_getMe(bot);
 
-  printf("id: %llu\n", info.id);
+  printf("id: %" PRIu64 "\n", info.id);
   printf("is_bot: %s\n", info.is_bot ? "true" : "false");
   printf("first_name: %s\n", info.first_name);
   printf("username: %s\n", info.username);
