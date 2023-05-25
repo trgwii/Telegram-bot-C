@@ -99,7 +99,7 @@ static void measure_end(char *name, double start) {
 
 // Check if a CLI command was passed (or always true if "all" was passed)
 static bool cli_command(int argc, char **argv, char *command) {
-  for (int i = 0; i < argc; i++) {
+  for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "all") == 0 || strcmp(argv[i], command) == 0)
       return true;
   }
