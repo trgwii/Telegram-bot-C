@@ -278,7 +278,6 @@ int main(int argc, char **argv) {
     sqlite3_free(errmsg);
     return 1;
   }
-  sqlite3_free(errmsg);
 
   Bot *bot = malloc(sizeof(Bot));
   *bot = Bot_init(argv[1], db, handle_message);
