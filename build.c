@@ -26,15 +26,16 @@ exit $?
   "-Wno-padded "                                                               \
   "-Wno-disabled-macro-expansion "                                             \
   "-Wno-declaration-after-statement "                                          \
-  "-Wno-used-but-marked-unused "                                               \
   "-Wno-reserved-macro-identifier "                                            \
-  "-Wno-unsafe-buffer-usage"
+  "-Wno-unsafe-buffer-usage "                                                  \
+  "-std=c99"
 #else
 #define FLAGS                                                                  \
   "-Wall "                                                                     \
   "-Wextra "                                                                   \
   "-Wpedantic "                                                                \
-  "-Werror"
+  "-Werror "                                                                   \
+  "-std=c99"
 #endif
 
 #include "build.h"
